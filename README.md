@@ -1,5 +1,5 @@
-# Viikkoraportti
+# Tiralabra - Ristinolla-peli ja tekoäly
 
-| Päivämäärä | Käytetty aika | Mitä tehtiin                                                          |
-| ---------- | ------------- | --------------------------------------------------------------------- |
-| 22.01      | 2 tuntia      | Määrittelydokumentti kirjoitettu ja muut alustavat toimenpiteet tehty |
+## Viikkoraportit
+
+[Viikkoraportti 1](https://github.com/JoonasC/tiralabra-ristinolla/blob/master/dokumentaatio/Viikkoraportti%201.md)
