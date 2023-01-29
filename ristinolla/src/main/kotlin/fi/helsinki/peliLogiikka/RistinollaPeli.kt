@@ -64,10 +64,19 @@ class RistinollaPeli(private val pelitaulukonKoko: Int) {
         var (oikealtaTutkittavanRuudunXKoordinaatti: Int, oikealtaTutkittavanRuudunYKoordinaatti: Int) =
             liikutaHakuaOikealle(lahtoRuudunXKoordinaatti, lahtoRuudunYKoordinaatti)
         while (true) {
-            if (vasemmaltaTutkittavanRuudunXKoordinaatti < 0 || vasemmaltaTutkittavanRuudunYKoordinaatti < 0) {
+            if (
+                liikuVasemmalle &&
+                vasemmaltaTutkittavanRuudunXKoordinaatti < 0 ||
+                vasemmaltaTutkittavanRuudunYKoordinaatti < 0 ||
+                vasemmaltaTutkittavanRuudunXKoordinaatti >= pelitaulukonKoko ||
+                vasemmaltaTutkittavanRuudunYKoordinaatti >= pelitaulukonKoko
+            ) {
                 liikuVasemmalle = false
             }
             if (
+                liikuOikealle &&
+                oikealtaTutkittavanRuudunXKoordinaatti < 0 ||
+                oikealtaTutkittavanRuudunYKoordinaatti < 0 ||
                 oikealtaTutkittavanRuudunXKoordinaatti >= pelitaulukonKoko ||
                 oikealtaTutkittavanRuudunYKoordinaatti >= pelitaulukonKoko
             ) {
@@ -183,11 +192,20 @@ class RistinollaPeli(private val pelitaulukonKoko: Int) {
      * @param siirronYKoordinaatti Siirron Y-koordinaatti
      * @return Pelin voittotilanteen
      * @throws IllegalStateException Jos peli on loppunut
-     * @throws IllegalArgumentException Jos siirtoa yritetään tehdä jo-valloitettuun ruutuun
+     * @throws IllegalArgumentException Jos siirtoa yritetään tehdä jo-valloitettuun ruutuun tai siirron koordinaatit
+     * sijoittuvat pelitaulukon ulkopuolelle
      */
     fun teeSiirto(siirronXKoordinaatti: Int, siirronYKoordinaatti: Int): Voittotilanne {
         if (voittotilanne.tyyppi != VoittotilanneTyyppi.EI_VOITTOA) {
             throw IllegalStateException("Peli on loppunut")
+        }
+        if (
+            siirronXKoordinaatti < 0 ||
+            siirronXKoordinaatti >= pelitaulukonKoko ||
+            siirronYKoordinaatti < 0 ||
+            siirronYKoordinaatti >= pelitaulukonKoko
+        ) {
+            throw IllegalArgumentException("Siirron koordinaattien täytyy sijoittua pelitaulukon sisään")
         }
         if (pelitaulukko[siirronYKoordinaatti][siirronXKoordinaatti] != -1) {
             throw IllegalArgumentException("Siirtoa ei ole mahdollista tehdä jo-valloitettuun ruutuun")
