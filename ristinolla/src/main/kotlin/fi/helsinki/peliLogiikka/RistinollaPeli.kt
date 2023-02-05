@@ -8,7 +8,7 @@ import kotlin.random.Random
  * @param pelitaulukonKoko Ristinolla-pelitaulukon koko, vähintään 3
  * @throws IllegalArgumentException Jos pelitaulukon koko on alle 3
  */
-class RistinollaPeli(private val pelitaulukonKoko: Int) {
+class RistinollaPeli(val pelitaulukonKoko: Int) {
     private val voittoonTarvittujenValloitettujenRuutujenMaara: Int = pelitaulukonKoko
 
     /**
@@ -38,7 +38,7 @@ class RistinollaPeli(private val pelitaulukonKoko: Int) {
      * Nollaa pelin
      */
     fun nollaa() {
-        val pelitaulukonKokoLukuvali = (0 until pelitaulukonKoko)
+        val pelitaulukonKokoLukuvali: IntRange = (0 until pelitaulukonKoko)
 
         voittotilanne = Voittotilanne(VoittotilanneTyyppi.EI_VOITTOA)
         siirtojaJaljella = (pelitaulukonKoko * pelitaulukonKoko)
@@ -228,7 +228,7 @@ class RistinollaPeli(private val pelitaulukonKoko: Int) {
 
     /**
      * Palauttaa pelitaulukon
-     * @return Pelitaulukko
+     * @return Pelitaulukon
      */
     fun getPelitaulukko(): Array<IntArray> = Array(pelitaulukonKoko) { pelitaulukko[it].copyOf() }
 }
