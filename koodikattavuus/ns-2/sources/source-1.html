@@ -1,0 +1,361 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <title>Coverage Report > RistinollaPeli</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">fi.helsinki.peliLogiikka</a>
+</div>
+
+<h1>Coverage Summary for Class: RistinollaPeli (fi.helsinki.peliLogiikka)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">RistinollaPeli</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    97.2%
+  </span>
+  <span class="absValue">
+    (70/72)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (112/112)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (626/626)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package fi.helsinki.peliLogiikka
+&nbsp;
+&nbsp;import kotlin.random.Random
+&nbsp;
+&nbsp;/**
+&nbsp; * Luokka joka toteuttaa pelilogiikan ristinollalle
+&nbsp; * @author Joonas Coatanea
+&nbsp; * @param pelitaulukonKoko Ristinolla-pelitaulukon koko, vähintään 3
+&nbsp; * @throws IllegalArgumentException Jos pelitaulukon koko on alle 3
+&nbsp; */
+<b class="fc">&nbsp;class RistinollaPeli(val pelitaulukonKoko: Int) {</b>
+<b class="fc">&nbsp;    private val voittoonTarvittujenValloitettujenRuutujenMaara: Int = pelitaulukonKoko</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Pelin voittotilanne
+&nbsp;     */
+<b class="fc">&nbsp;    var voittotilanne: Voittotilanne = Voittotilanne(VoittotilanneTyyppi.EI_VOITTOA)</b>
+&nbsp;        private set
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Se pelaaja, kenen vuoro on tehdä siirto
+&nbsp;     */
+<b class="fc">&nbsp;    var pelaajanVuoro = Random.nextInt(0, 2)</b>
+&nbsp;        private set
+&nbsp;
+<b class="fc">&nbsp;    private var siirtojaJaljella: Int = (pelitaulukonKoko * pelitaulukonKoko)</b>
+<b class="fc">&nbsp;    private val pelitaulukko: Array&lt;IntArray&gt; = Array(pelitaulukonKoko) {</b>
+<b class="fc">&nbsp;        IntArray(pelitaulukonKoko) { -1 }</b>
+&nbsp;    }
+&nbsp;
+<b class="fc">&nbsp;    init {</b>
+<b class="fc">&nbsp;        if (pelitaulukonKoko &lt; 3) {</b>
+<b class="fc">&nbsp;            throw IllegalArgumentException(&quot;Pelitaulukon koon täytyy olla vähintään 3&quot;)</b>
+&nbsp;        }
+<b class="fc">&nbsp;    }</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Nollaa pelin
+&nbsp;     */
+&nbsp;    fun nollaa() {
+<b class="fc">&nbsp;        val pelitaulukonKokoLukuvali: IntRange = (0 until pelitaulukonKoko)</b>
+&nbsp;
+<b class="fc">&nbsp;        voittotilanne = Voittotilanne(VoittotilanneTyyppi.EI_VOITTOA)</b>
+<b class="fc">&nbsp;        siirtojaJaljella = (pelitaulukonKoko * pelitaulukonKoko)</b>
+<b class="fc">&nbsp;        pelitaulukonKokoLukuvali.forEach { rivi -&gt;</b>
+<b class="fc">&nbsp;            pelitaulukonKokoLukuvali.forEach { sarake -&gt;</b>
+<b class="fc">&nbsp;                pelitaulukko[rivi][sarake] = -1</b>
+<b class="fc">&nbsp;            }</b>
+<b class="fc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private inline fun laskeValloitettujenRuutujenMaara(
+&nbsp;        lahtoRuudunXKoordinaatti: Int,
+&nbsp;        lahtoRuudunYKoordinaatti: Int,
+&nbsp;        liikutaHakuaVasemmalle: (Int, Int) -&gt; Pair&lt;Int, Int&gt;,
+&nbsp;        liikutaHakuaOikealle: (Int, Int) -&gt; Pair&lt;Int, Int&gt;
+&nbsp;    ): Int {
+<b class="fc">&nbsp;        var valloitettujenRuutujenMaara = 1</b>
+&nbsp;
+<b class="fc">&nbsp;        var liikuVasemmalle = true</b>
+<b class="fc">&nbsp;        var liikuOikealle = true</b>
+<b class="fc">&nbsp;        var (vasemmaltaTutkittavanRuudunXKoordinaatti: Int, vasemmaltaTutkittavanRuudunYKoordinaatti: Int) =</b>
+<b class="fc">&nbsp;            liikutaHakuaVasemmalle(lahtoRuudunXKoordinaatti, lahtoRuudunYKoordinaatti)</b>
+<b class="fc">&nbsp;        var (oikealtaTutkittavanRuudunXKoordinaatti: Int, oikealtaTutkittavanRuudunYKoordinaatti: Int) =</b>
+<b class="fc">&nbsp;            liikutaHakuaOikealle(lahtoRuudunXKoordinaatti, lahtoRuudunYKoordinaatti)</b>
+<b class="fc">&nbsp;        while (true) {</b>
+<b class="fc">&nbsp;            if (</b>
+<b class="fc">&nbsp;                liikuVasemmalle &amp;&amp;</b>
+<b class="fc">&nbsp;                vasemmaltaTutkittavanRuudunXKoordinaatti &lt; 0 ||</b>
+<b class="fc">&nbsp;                vasemmaltaTutkittavanRuudunYKoordinaatti &lt; 0 ||</b>
+<b class="pc">&nbsp;                vasemmaltaTutkittavanRuudunXKoordinaatti &gt;= pelitaulukonKoko ||</b>
+<b class="fc">&nbsp;                vasemmaltaTutkittavanRuudunYKoordinaatti &gt;= pelitaulukonKoko</b>
+&nbsp;            ) {
+<b class="fc">&nbsp;                liikuVasemmalle = false</b>
+&nbsp;            }
+<b class="fc">&nbsp;            if (</b>
+<b class="fc">&nbsp;                liikuOikealle &amp;&amp;</b>
+<b class="pc">&nbsp;                oikealtaTutkittavanRuudunXKoordinaatti &lt; 0 ||</b>
+<b class="fc">&nbsp;                oikealtaTutkittavanRuudunYKoordinaatti &lt; 0 ||</b>
+<b class="fc">&nbsp;                oikealtaTutkittavanRuudunXKoordinaatti &gt;= pelitaulukonKoko ||</b>
+<b class="fc">&nbsp;                oikealtaTutkittavanRuudunYKoordinaatti &gt;= pelitaulukonKoko</b>
+&nbsp;            ) {
+<b class="fc">&nbsp;                liikuOikealle = false</b>
+&nbsp;            }
+&nbsp;
+<b class="fc">&nbsp;            if (</b>
+<b class="fc">&nbsp;                liikuVasemmalle &amp;&amp;</b>
+<b class="fc">&nbsp;                pelitaulukko[vasemmaltaTutkittavanRuudunYKoordinaatti][vasemmaltaTutkittavanRuudunXKoordinaatti] == pelaajanVuoro</b>
+&nbsp;            ) {
+<b class="fc">&nbsp;                valloitettujenRuutujenMaara++</b>
+<b class="fc">&nbsp;            } else if (liikuVasemmalle) {</b>
+<b class="fc">&nbsp;                liikuVasemmalle = false</b>
+&nbsp;            }
+<b class="fc">&nbsp;            if (</b>
+<b class="fc">&nbsp;                liikuOikealle &amp;&amp;</b>
+<b class="fc">&nbsp;                pelitaulukko[oikealtaTutkittavanRuudunYKoordinaatti][oikealtaTutkittavanRuudunXKoordinaatti] == pelaajanVuoro</b>
+&nbsp;            ) {
+<b class="fc">&nbsp;                valloitettujenRuutujenMaara++</b>
+<b class="fc">&nbsp;            } else if (liikuOikealle) {</b>
+<b class="fc">&nbsp;                liikuOikealle = false</b>
+&nbsp;            }
+&nbsp;
+<b class="fc">&nbsp;            if (!liikuVasemmalle &amp;&amp; !liikuOikealle) {</b>
+<b class="fc">&nbsp;                break</b>
+&nbsp;            }
+<b class="fc">&nbsp;            if (liikuVasemmalle) {</b>
+<b class="fc">&nbsp;                liikutaHakuaVasemmalle(</b>
+<b class="fc">&nbsp;                    vasemmaltaTutkittavanRuudunXKoordinaatti,</b>
+<b class="fc">&nbsp;                    vasemmaltaTutkittavanRuudunYKoordinaatti</b>
+<b class="fc">&nbsp;                ).let {</b>
+<b class="fc">&nbsp;                    vasemmaltaTutkittavanRuudunXKoordinaatti = it.first</b>
+<b class="fc">&nbsp;                    vasemmaltaTutkittavanRuudunYKoordinaatti = it.second</b>
+<b class="fc">&nbsp;                }</b>
+&nbsp;            }
+<b class="fc">&nbsp;            if (liikuOikealle) {</b>
+<b class="fc">&nbsp;                liikutaHakuaOikealle(</b>
+<b class="fc">&nbsp;                    oikealtaTutkittavanRuudunXKoordinaatti,</b>
+<b class="fc">&nbsp;                    oikealtaTutkittavanRuudunYKoordinaatti</b>
+<b class="fc">&nbsp;                ).let {</b>
+<b class="fc">&nbsp;                    oikealtaTutkittavanRuudunXKoordinaatti = it.first</b>
+<b class="fc">&nbsp;                    oikealtaTutkittavanRuudunYKoordinaatti = it.second</b>
+<b class="fc">&nbsp;                }</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        return valloitettujenRuutujenMaara</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private fun tarkistaVoittikoSiirronTehnytPelaaja(siirronXKoordinaatti: Int, siirronYKoordinaatti: Int): Boolean {
+<b class="fc">&nbsp;        val vaakarivillaOlevienValloitettujenRuutujenMaara: Int = laskeValloitettujenRuutujenMaara(</b>
+&nbsp;            siirronXKoordinaatti,
+&nbsp;            siirronYKoordinaatti,
+&nbsp;            { ruudunXKoordinaatti, ruudunYKoordinaatti -&gt;
+<b class="fc">&nbsp;                Pair((ruudunXKoordinaatti - 1), ruudunYKoordinaatti)</b>
+&nbsp;            },
+&nbsp;            { ruudunXKoordinaatti, ruudunYKoordinaatti -&gt;
+<b class="fc">&nbsp;                Pair((ruudunXKoordinaatti + 1), ruudunYKoordinaatti)</b>
+&nbsp;            }
+&nbsp;        )
+<b class="fc">&nbsp;        if (vaakarivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {</b>
+<b class="fc">&nbsp;            return true</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        val pystyrivillaOlevienValloitettujenRuutujenMaara: Int = laskeValloitettujenRuutujenMaara(</b>
+&nbsp;            siirronXKoordinaatti,
+&nbsp;            siirronYKoordinaatti,
+&nbsp;            { ruudunXKoordinaatti, ruudunYKoordinaatti -&gt;
+<b class="fc">&nbsp;                Pair(ruudunXKoordinaatti, (ruudunYKoordinaatti - 1))</b>
+&nbsp;            },
+&nbsp;            { ruudunXKoordinaatti, ruudunYKoordinaatti -&gt;
+<b class="fc">&nbsp;                Pair(ruudunXKoordinaatti, (ruudunYKoordinaatti + 1))</b>
+&nbsp;            }
+&nbsp;        )
+<b class="fc">&nbsp;        if (pystyrivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {</b>
+<b class="fc">&nbsp;            return true</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        val vasenOikeaVinorivillaOlevienValloitettujenRuutujenMaara: Int = laskeValloitettujenRuutujenMaara(</b>
+&nbsp;            siirronXKoordinaatti,
+&nbsp;            siirronYKoordinaatti,
+&nbsp;            { ruudunXKoordinaatti, ruudunYKoordinaatti -&gt;
+<b class="fc">&nbsp;                Pair((ruudunXKoordinaatti - 1), (ruudunYKoordinaatti - 1))</b>
+&nbsp;            },
+&nbsp;            { ruudunXKoordinaatti, ruudunYKoordinaatti -&gt;
+<b class="fc">&nbsp;                Pair((ruudunXKoordinaatti + 1), (ruudunYKoordinaatti + 1))</b>
+&nbsp;            }
+&nbsp;        )
+<b class="fc">&nbsp;        if (vasenOikeaVinorivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {</b>
+<b class="fc">&nbsp;            return true</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        val oikeaVasenVinorivillaOlevienValloitettujenRuutujenMaara: Int = laskeValloitettujenRuutujenMaara(</b>
+&nbsp;            siirronXKoordinaatti,
+&nbsp;            siirronYKoordinaatti,
+&nbsp;            { ruudunXKoordinaatti, ruudunYKoordinaatti -&gt;
+<b class="fc">&nbsp;                Pair((ruudunXKoordinaatti - 1), (ruudunYKoordinaatti + 1))</b>
+&nbsp;            },
+&nbsp;            { ruudunXKoordinaatti, ruudunYKoordinaatti -&gt;
+<b class="fc">&nbsp;                Pair((ruudunXKoordinaatti + 1), (ruudunYKoordinaatti - 1))</b>
+&nbsp;            }
+&nbsp;        )
+<b class="fc">&nbsp;        if (oikeaVasenVinorivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {</b>
+<b class="fc">&nbsp;            return true</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        return false</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Tekee siirron ja palauttaa pelin voittotilanteen
+&nbsp;     * @param siirronXKoordinaatti Siirron X-koordinaatti
+&nbsp;     * @param siirronYKoordinaatti Siirron Y-koordinaatti
+&nbsp;     * @return Pelin voittotilanteen
+&nbsp;     * @throws IllegalStateException Jos peli on loppunut
+&nbsp;     * @throws IllegalArgumentException Jos siirtoa yritetään tehdä jo-valloitettuun ruutuun tai siirron koordinaatit
+&nbsp;     * sijoittuvat pelitaulukon ulkopuolelle
+&nbsp;     */
+&nbsp;    fun teeSiirto(siirronXKoordinaatti: Int, siirronYKoordinaatti: Int): Voittotilanne {
+<b class="fc">&nbsp;        if (voittotilanne.tyyppi != VoittotilanneTyyppi.EI_VOITTOA) {</b>
+<b class="fc">&nbsp;            throw IllegalStateException(&quot;Peli on loppunut&quot;)</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (</b>
+<b class="fc">&nbsp;            siirronXKoordinaatti &lt; 0 ||</b>
+<b class="fc">&nbsp;            siirronXKoordinaatti &gt;= pelitaulukonKoko ||</b>
+<b class="fc">&nbsp;            siirronYKoordinaatti &lt; 0 ||</b>
+<b class="fc">&nbsp;            siirronYKoordinaatti &gt;= pelitaulukonKoko</b>
+&nbsp;        ) {
+<b class="fc">&nbsp;            throw IllegalArgumentException(&quot;Siirron koordinaattien täytyy sijoittua pelitaulukon sisään&quot;)</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (pelitaulukko[siirronYKoordinaatti][siirronXKoordinaatti] != -1) {</b>
+<b class="fc">&nbsp;            throw IllegalArgumentException(&quot;Siirtoa ei ole mahdollista tehdä jo-valloitettuun ruutuun&quot;)</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        pelitaulukko[siirronYKoordinaatti][siirronXKoordinaatti] = pelaajanVuoro</b>
+<b class="fc">&nbsp;        siirtojaJaljella--</b>
+&nbsp;
+<b class="fc">&nbsp;        if (tarkistaVoittikoSiirronTehnytPelaaja(siirronXKoordinaatti, siirronYKoordinaatti)) {</b>
+<b class="fc">&nbsp;            voittotilanne = Voittotilanne(VoittotilanneTyyppi.VOITTO, pelaajanVuoro)</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (siirtojaJaljella == 0) {</b>
+<b class="fc">&nbsp;            voittotilanne = Voittotilanne(VoittotilanneTyyppi.TASAPELI)</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        pelaajanVuoro = (1 - pelaajanVuoro)</b>
+&nbsp;
+<b class="fc">&nbsp;        return voittotilanne</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Palauttaa pelitaulukon
+&nbsp;     * @return Pelitaulukon
+&nbsp;     */
+<b class="fc">&nbsp;    fun getPelitaulukko(): Array&lt;IntArray&gt; = Array(pelitaulukonKoko) { pelitaulukko[it].copyOf() }</b>
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2023-02-05 23:00</div>
+</div>
+</body>
+</html>
