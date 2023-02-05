@@ -187,7 +187,7 @@ class RistinollaPeli(private val pelitaulukonKoko: Int) {
     }
 
     /**
-     * Tekee siirron
+     * Tekee siirron ja palauttaa pelin voittotilanteen
      * @param siirronXKoordinaatti Siirron X-koordinaatti
      * @param siirronYKoordinaatti Siirron Y-koordinaatti
      * @return Pelin voittotilanteen
