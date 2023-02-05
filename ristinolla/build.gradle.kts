@@ -1,6 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+    id("org.jetbrains.kotlinx.kover") version "0.6.1"
     kotlin("jvm") version "1.8.0"
 }
 
