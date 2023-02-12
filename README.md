@@ -7,3 +7,5 @@
 [Viikkoraportti 2](https://github.com/JoonasC/tiralabra-ristinolla/blob/master/dokumentaatio/Viikkoraportti%202.md)
 
 [Viikkoraportti 3](https://github.com/JoonasC/tiralabra-ristinolla/blob/master/dokumentaatio/Viikkoraportti%203.md)
+
+[Viikkoraportti 4](https://github.com/JoonasC/tiralabra-ristinolla/blob/master/dokumentaatio/Viikkoraportti%204.md)
