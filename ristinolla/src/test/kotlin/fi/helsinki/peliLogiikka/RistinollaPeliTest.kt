@@ -126,14 +126,14 @@ class RistinollaPeliTest {
             VoittotilanneTyyppi.VOITTO,
             ristinollaPeli
                 ?.voittotilanne
-                ?.tyyppi
+                ?.tyyppi,
         )
         ristinollaPeli?.nollaa()
         assertEquals(
             VoittotilanneTyyppi.EI_VOITTOA,
             ristinollaPeli
                 ?.voittotilanne
-                ?.tyyppi
+                ?.tyyppi,
         )
 
         ristinollaPeli?.teeSiirto(0, 0)

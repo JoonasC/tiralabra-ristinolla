@@ -9,7 +9,7 @@ import kotlin.random.Random
  * @throws IllegalArgumentException Jos pelitaulukon koko on alle 3
  */
 class RistinollaPeli(val pelitaulukonKoko: Int) {
-    private val voittoonTarvittujenValloitettujenRuutujenMaara: Int = pelitaulukonKoko
+    val voittoonTarvittujenValloitettujenRuutujenMaara: Int = pelitaulukonKoko
 
     /**
      * Pelin voittotilanne
@@ -49,11 +49,11 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
         }
     }
 
-    private inline fun laskeValloitettujenRuutujenMaara(
+    private fun laskeValloitettujenRuutujenMaara(
         lahtoRuudunXKoordinaatti: Int,
         lahtoRuudunYKoordinaatti: Int,
         liikutaHakuaVasemmalle: (Int, Int) -> Pair<Int, Int>,
-        liikutaHakuaOikealle: (Int, Int) -> Pair<Int, Int>
+        liikutaHakuaOikealle: (Int, Int) -> Pair<Int, Int>,
     ): Int {
         var valloitettujenRuutujenMaara = 1
 
@@ -106,7 +106,7 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
             if (liikuVasemmalle) {
                 liikutaHakuaVasemmalle(
                     vasemmaltaTutkittavanRuudunXKoordinaatti,
-                    vasemmaltaTutkittavanRuudunYKoordinaatti
+                    vasemmaltaTutkittavanRuudunYKoordinaatti,
                 ).let {
                     vasemmaltaTutkittavanRuudunXKoordinaatti = it.first
                     vasemmaltaTutkittavanRuudunYKoordinaatti = it.second
@@ -115,7 +115,7 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
             if (liikuOikealle) {
                 liikutaHakuaOikealle(
                     oikealtaTutkittavanRuudunXKoordinaatti,
-                    oikealtaTutkittavanRuudunYKoordinaatti
+                    oikealtaTutkittavanRuudunYKoordinaatti,
                 ).let {
                     oikealtaTutkittavanRuudunXKoordinaatti = it.first
                     oikealtaTutkittavanRuudunYKoordinaatti = it.second
@@ -135,7 +135,7 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
             },
             { ruudunXKoordinaatti, ruudunYKoordinaatti ->
                 Pair((ruudunXKoordinaatti + 1), ruudunYKoordinaatti)
-            }
+            },
         )
         if (vaakarivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
             return true
@@ -149,7 +149,7 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
             },
             { ruudunXKoordinaatti, ruudunYKoordinaatti ->
                 Pair(ruudunXKoordinaatti, (ruudunYKoordinaatti + 1))
-            }
+            },
         )
         if (pystyrivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
             return true
@@ -163,7 +163,7 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
             },
             { ruudunXKoordinaatti, ruudunYKoordinaatti ->
                 Pair((ruudunXKoordinaatti + 1), (ruudunYKoordinaatti + 1))
-            }
+            },
         )
         if (vasenOikeaVinorivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
             return true
@@ -177,7 +177,7 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
             },
             { ruudunXKoordinaatti, ruudunYKoordinaatti ->
                 Pair((ruudunXKoordinaatti + 1), (ruudunYKoordinaatti - 1))
-            }
+            },
         )
         if (oikeaVasenVinorivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
             return true
