@@ -553,7 +553,12 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
         pelitaulukko[merkittavaSiirto.second][merkittavaSiirto.first] = pelaaja
 
         if (!maksimoivanPelaajanSiirto) {
-            viimeksiOtetutSiirrot[0] = Pair(merkittavaSiirto, pelaaja)
+            val minimoivanPelaajanOttamaSiirto: Pair<Pair<Int, Int>, Int> = Pair(merkittavaSiirto, pelaaja)
+            if (viimeksiOtetutSiirrot.isEmpty()) {
+                viimeksiOtetutSiirrot.add(minimoivanPelaajanOttamaSiirto)
+            } else {
+                viimeksiOtetutSiirrot[0] = minimoivanPelaajanOttamaSiirto
+            }
         }
     }
 }
