@@ -398,7 +398,7 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
             viimeksiOtetutSiirrot
                 .last()
                 .first != palautettavaSiirto ||
-            viimeksiOtetutSiirrot.size <= 1
+            viimeksiOtetutSiirrot.size < 1
         ) {
             throw IllegalArgumentException("Siirtoa ei voi palauttaa")
         }
@@ -488,7 +488,7 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
      */
     fun getPelinPaattymistilanneJaVoittoarvo(): Pair<Boolean, Double> {
         tarkistaEtteiPeliOleLoppunut()
-        if (viimeksiOtetutSiirrot.size <= 1) {
+        if (viimeksiOtetutSiirrot.size < 1) {
             throw IllegalStateException("Otettuja siirtoja ei ole")
         }
 
