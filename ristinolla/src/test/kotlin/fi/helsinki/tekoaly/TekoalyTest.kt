@@ -2,6 +2,7 @@ package fi.helsinki.tekoaly
 
 import apuohjelmat.TESTEISSA_KAYTETYN_PELITAULUKON_KOKO
 import apuohjelmat.TESTEISSA_KAYTETYN_TEKOALYN_ETSINTASYVYYS
+import apuohjelmat.TESTEISSA_KAYTETYN_VOITTORIVIN_PITUUS
 import fi.helsinki.peliLogiikka.RistinollaPeli
 import fi.helsinki.peliLogiikka.Voittotilanne
 import fi.helsinki.peliLogiikka.VoittotilanneTyyppi
@@ -16,10 +17,14 @@ class TekoalyTest {
 
     @BeforeTest
     fun rakennaTestiymparisto() {
-        ristinollaPeli = RistinollaPeli(TESTEISSA_KAYTETYN_PELITAULUKON_KOKO)
+        ristinollaPeli = RistinollaPeli(TESTEISSA_KAYTETYN_PELITAULUKON_KOKO, TESTEISSA_KAYTETYN_VOITTORIVIN_PITUUS)
         tekoalynPelaaja = (1 - (ristinollaPeli?.pelaajanVuoro as Int))
         val siirtogeneraattori = Siirtogeneraattori((ristinollaPeli as RistinollaPeli), (tekoalynPelaaja as Int))
-        tekoaly = Tekoaly(TESTEISSA_KAYTETYN_TEKOALYN_ETSINTASYVYYS, siirtogeneraattori)
+        tekoaly = Tekoaly(
+            TESTEISSA_KAYTETYN_TEKOALYN_ETSINTASYVYYS,
+            (ristinollaPeli as RistinollaPeli),
+            siirtogeneraattori,
+        )
     }
 
     @Test

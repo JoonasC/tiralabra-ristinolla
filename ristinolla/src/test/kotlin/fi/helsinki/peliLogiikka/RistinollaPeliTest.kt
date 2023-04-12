@@ -1,6 +1,7 @@
 package fi.helsinki.peliLogiikka
 
 import apuohjelmat.TESTEISSA_KAYTETYN_PELITAULUKON_KOKO
+import apuohjelmat.TESTEISSA_KAYTETYN_VOITTORIVIN_PITUUS
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -14,7 +15,7 @@ class RistinollaPeliTest {
 
     @BeforeTest
     fun rakennaTestiymparisto() {
-        ristinollaPeli = RistinollaPeli(TESTEISSA_KAYTETYN_PELITAULUKON_KOKO)
+        ristinollaPeli = RistinollaPeli(TESTEISSA_KAYTETYN_PELITAULUKON_KOKO, TESTEISSA_KAYTETYN_VOITTORIVIN_PITUUS)
     }
 
     @Test
@@ -31,24 +32,6 @@ class RistinollaPeliTest {
         assertEquals(vuorolla2OlevanPelaajanVuoro, vuorolla4OlevanPelaajanVuoro)
         assertNotEquals(aloittavanPelaajanVuoro, vuorolla2OlevanPelaajanVuoro)
         assertNotEquals(vuorolla2OlevanPelaajanVuoro, vuorolla3OlevanPelaajanVuoro)
-    }
-
-    @Test
-    fun pelinPitaisiPaattyaTasapeliinJosKaikkiRuudutOnValloitettu() {
-        val eiVoittoaVoittotilanne = Voittotilanne(VoittotilanneTyyppi.EI_VOITTOA)
-        val tasapeliVoittotilanne = Voittotilanne(VoittotilanneTyyppi.TASAPELI)
-
-        assertEquals(eiVoittoaVoittotilanne, ristinollaPeli?.teeSiirto(0, 0))
-        assertEquals(eiVoittoaVoittotilanne, ristinollaPeli?.teeSiirto(1, 0))
-        assertEquals(eiVoittoaVoittotilanne, ristinollaPeli?.teeSiirto(2, 0))
-        assertEquals(eiVoittoaVoittotilanne, ristinollaPeli?.teeSiirto(1, 1))
-        assertEquals(eiVoittoaVoittotilanne, ristinollaPeli?.teeSiirto(0, 1))
-        assertEquals(eiVoittoaVoittotilanne, ristinollaPeli?.teeSiirto(0, 2))
-        assertEquals(eiVoittoaVoittotilanne, ristinollaPeli?.teeSiirto(1, 2))
-        assertEquals(eiVoittoaVoittotilanne, ristinollaPeli?.teeSiirto(2, 1))
-        assertEquals(tasapeliVoittotilanne, ristinollaPeli?.teeSiirto(2, 2))
-
-        assertEquals(tasapeliVoittotilanne, ristinollaPeli?.voittotilanne)
     }
 
     @Test
@@ -172,9 +155,17 @@ class RistinollaPeliTest {
     @Test
     fun pelinPelitaulukonKokoEiVoiOllaPienempiKuin3() {
         val exc: IllegalArgumentException = assertFailsWith {
-            RistinollaPeli(2)
+            RistinollaPeli(2, TESTEISSA_KAYTETYN_VOITTORIVIN_PITUUS)
         }
         assertEquals("Pelitaulukon koon täytyy olla vähintään 3", exc.message)
+    }
+
+    @Test
+    fun pelinVoittoonTarvittujenValloitettujenRuutujenMaaraEiVoiOllaPienempiKuin3() {
+        val exc: IllegalArgumentException = assertFailsWith {
+            RistinollaPeli(TESTEISSA_KAYTETYN_PELITAULUKON_KOKO, 2)
+        }
+        assertEquals("Voittoon tarvittujen valloitettujen ruutujen määrän täytyy olla vähintään 3", exc.message)
     }
 
     @Test

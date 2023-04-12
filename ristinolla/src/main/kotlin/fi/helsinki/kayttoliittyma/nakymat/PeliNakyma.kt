@@ -15,8 +15,12 @@ import tornadofx.label
 import tornadofx.vbox
 
 class PeliNakyma : View() {
-    private val ristinollaPeli = RistinollaPeli(5)
-    private var tekoaly = Tekoaly(6, Siirtogeneraattori(ristinollaPeli, 1))
+    private val pelitaulukonKoko = 25
+    private val voittoonTarvittujenValloitettujenRuutujenMaara = 5
+    private val etsintasyvyys = 6
+
+    private val ristinollaPeli = RistinollaPeli(pelitaulukonKoko, voittoonTarvittujenValloitettujenRuutujenMaara)
+    private var tekoaly = Tekoaly(etsintasyvyys, ristinollaPeli, Siirtogeneraattori(ristinollaPeli, 1))
 
     private var taustaoperaatioMeneillaan = false
     private val peliOnPaattynyt: Boolean
@@ -26,8 +30,8 @@ class PeliNakyma : View() {
                 .tyyppi != VoittotilanneTyyppi.EI_VOITTOA
             )
 
-    private val ruutujenSisallot: Array<Array<SimpleStringProperty>> = Array(5) {
-        Array(5) { SimpleStringProperty(" ") }
+    private val ruutujenSisallot: Array<Array<SimpleStringProperty>> = Array(pelitaulukonKoko) {
+        Array(pelitaulukonKoko) { SimpleStringProperty(" ") }
     }
 
     private val voittoilmoittajanSisalto = SimpleStringProperty()
@@ -35,7 +39,7 @@ class PeliNakyma : View() {
     override val root: Parent = vbox {
         alignment = Pos.CENTER
 
-        val pelitaulukonKokoLukuvali: IntRange = (0 until 5)
+        val pelitaulukonKokoLukuvali: IntRange = (0 until pelitaulukonKoko)
 
         pelitaulukonKokoLukuvali.forEach { rivi ->
             hbox {
@@ -60,7 +64,7 @@ class PeliNakyma : View() {
             action {
                 if (!taustaoperaatioMeneillaan) {
                     ristinollaPeli.nollaa()
-                    tekoaly = Tekoaly(6, Siirtogeneraattori(ristinollaPeli, 1))
+                    tekoaly = Tekoaly(etsintasyvyys, ristinollaPeli, Siirtogeneraattori(ristinollaPeli, 1))
 
                     pelitaulukonKokoLukuvali.forEach { rivi ->
                         pelitaulukonKokoLukuvali.forEach { sarake ->

@@ -1,16 +1,25 @@
 package fi.helsinki.peliLogiikka
 
+import fi.helsinki.apuohjelmat.liikutaHakuaOikeaVasenVinorivillaOikealle
+import fi.helsinki.apuohjelmat.liikutaHakuaOikeaVasenVinorivillaVasemmalle
+import fi.helsinki.apuohjelmat.liikutaHakuaPystyrivillaOikealle
+import fi.helsinki.apuohjelmat.liikutaHakuaPystyrivillaVasemmalle
+import fi.helsinki.apuohjelmat.liikutaHakuaVaakarivillaOikealle
+import fi.helsinki.apuohjelmat.liikutaHakuaVaakarivillaVasemmalle
+import fi.helsinki.apuohjelmat.liikutaHakuaVasenOikeaVinorivillaOikealle
+import fi.helsinki.apuohjelmat.liikutaHakuaVasenOikeaVinorivillaVasemmalle
 import kotlin.random.Random
 
 /**
  * Luokka joka toteuttaa pelilogiikan ristinollalle
  * @author Joonas Coatanea
- * @param pelitaulukonKoko Ristinolla-pelitaulukon koko, vähintään 3
- * @throws IllegalArgumentException Jos pelitaulukon koko on alle 3
+ * @param pelitaulukonKoko Ristinolla-pelitaulukon koko. Vähintään 3
+ * @param voittoonTarvittujenValloitettujenRuutujenMaara Se määrä ruutuja joita pelaajan tarvitsee voittaakseen
+ * valloittaa vaaka-, pysty- tai vinorivillä. Vähintään 3
+ * @throws IllegalArgumentException Jos pelitaulukon koko on alle 3 tai voittoon tarvittujen valloitettujen ruutujen
+ * määrä on alle 3
  */
-class RistinollaPeli(val pelitaulukonKoko: Int) {
-    val voittoonTarvittujenValloitettujenRuutujenMaara: Int = pelitaulukonKoko
-
+class RistinollaPeli(val pelitaulukonKoko: Int, val voittoonTarvittujenValloitettujenRuutujenMaara: Int) {
     /**
      * Pelin voittotilanne
      */
@@ -31,6 +40,9 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
     init {
         if (pelitaulukonKoko < 3) {
             throw IllegalArgumentException("Pelitaulukon koon täytyy olla vähintään 3")
+        }
+        if (voittoonTarvittujenValloitettujenRuutujenMaara < 3) {
+            throw IllegalArgumentException("Voittoon tarvittujen valloitettujen ruutujen määrän täytyy olla vähintään 3")
         }
     }
 
@@ -88,6 +100,9 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
                 pelitaulukko[vasemmaltaTutkittavanRuudunYKoordinaatti][vasemmaltaTutkittavanRuudunXKoordinaatti] == pelaajanVuoro
             ) {
                 valloitettujenRuutujenMaara++
+                if (valloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
+                    break
+                }
             } else if (liikuVasemmalle) {
                 liikuVasemmalle = false
             }
@@ -96,6 +111,9 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
                 pelitaulukko[oikealtaTutkittavanRuudunYKoordinaatti][oikealtaTutkittavanRuudunXKoordinaatti] == pelaajanVuoro
             ) {
                 valloitettujenRuutujenMaara++
+                if (valloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
+                    break
+                }
             } else if (liikuOikealle) {
                 liikuOikealle = false
             }
@@ -130,12 +148,8 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
         val vaakarivillaOlevienValloitettujenRuutujenMaara: Int = laskeValloitettujenRuutujenMaara(
             siirronXKoordinaatti,
             siirronYKoordinaatti,
-            { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                Pair((ruudunXKoordinaatti - 1), ruudunYKoordinaatti)
-            },
-            { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                Pair((ruudunXKoordinaatti + 1), ruudunYKoordinaatti)
-            },
+            ::liikutaHakuaVaakarivillaVasemmalle,
+            ::liikutaHakuaVaakarivillaOikealle,
         )
         if (vaakarivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
             return true
@@ -144,12 +158,8 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
         val pystyrivillaOlevienValloitettujenRuutujenMaara: Int = laskeValloitettujenRuutujenMaara(
             siirronXKoordinaatti,
             siirronYKoordinaatti,
-            { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                Pair(ruudunXKoordinaatti, (ruudunYKoordinaatti - 1))
-            },
-            { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                Pair(ruudunXKoordinaatti, (ruudunYKoordinaatti + 1))
-            },
+            ::liikutaHakuaPystyrivillaVasemmalle,
+            ::liikutaHakuaPystyrivillaOikealle,
         )
         if (pystyrivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
             return true
@@ -158,12 +168,8 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
         val vasenOikeaVinorivillaOlevienValloitettujenRuutujenMaara: Int = laskeValloitettujenRuutujenMaara(
             siirronXKoordinaatti,
             siirronYKoordinaatti,
-            { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                Pair((ruudunXKoordinaatti - 1), (ruudunYKoordinaatti - 1))
-            },
-            { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                Pair((ruudunXKoordinaatti + 1), (ruudunYKoordinaatti + 1))
-            },
+            ::liikutaHakuaVasenOikeaVinorivillaVasemmalle,
+            ::liikutaHakuaVasenOikeaVinorivillaOikealle,
         )
         if (vasenOikeaVinorivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
             return true
@@ -172,12 +178,8 @@ class RistinollaPeli(val pelitaulukonKoko: Int) {
         val oikeaVasenVinorivillaOlevienValloitettujenRuutujenMaara: Int = laskeValloitettujenRuutujenMaara(
             siirronXKoordinaatti,
             siirronYKoordinaatti,
-            { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                Pair((ruudunXKoordinaatti - 1), (ruudunYKoordinaatti + 1))
-            },
-            { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                Pair((ruudunXKoordinaatti + 1), (ruudunYKoordinaatti - 1))
-            },
+            ::liikutaHakuaOikeaVasenVinorivillaVasemmalle,
+            ::liikutaHakuaOikeaVasenVinorivillaOikealle,
         )
         if (oikeaVasenVinorivillaOlevienValloitettujenRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
             return true

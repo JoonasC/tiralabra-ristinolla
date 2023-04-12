@@ -1,7 +1,17 @@
 package fi.helsinki.tekoaly
 
+import fi.helsinki.apuohjelmat.liikutaHakuaOikeaVasenVinorivillaOikealle
+import fi.helsinki.apuohjelmat.liikutaHakuaOikeaVasenVinorivillaVasemmalle
+import fi.helsinki.apuohjelmat.liikutaHakuaPystyrivillaOikealle
+import fi.helsinki.apuohjelmat.liikutaHakuaPystyrivillaVasemmalle
+import fi.helsinki.apuohjelmat.liikutaHakuaVaakarivillaOikealle
+import fi.helsinki.apuohjelmat.liikutaHakuaVaakarivillaVasemmalle
+import fi.helsinki.apuohjelmat.liikutaHakuaVasenOikeaVinorivillaOikealle
+import fi.helsinki.apuohjelmat.liikutaHakuaVasenOikeaVinorivillaVasemmalle
 import fi.helsinki.peliLogiikka.RistinollaPeli
 import fi.helsinki.peliLogiikka.VoittotilanneTyyppi
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Luokka joka pitää kirjaa siitä minkälaisia siirtoja on mahdollista tehdä, ja mikä siirto on paras
@@ -9,6 +19,7 @@ import fi.helsinki.peliLogiikka.VoittotilanneTyyppi
  * @author Joonas Coatanea
  * @param ristinollaPeli Peli jonka mahdollisista siirroista tulee pitää kirjaa
  * @param maksimoivaPelaaja Se pelaaja, joka on maksimoiva
+ * @throws IllegalArgumentException Jos peli on jo aloitettu
  */
 class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val maksimoivaPelaaja: Int) {
     private val minimoivaPelaaja: Int = (1 - maksimoivaPelaaja)
@@ -20,19 +31,18 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
 
     private val pelitaulukko: Array<IntArray> = ristinollaPeli.getPelitaulukko()
 
+    private val viimeksiTehdytSiirrot: MutableList<Pair<Pair<Int, Int>, Int>> = mutableListOf()
     private val viimeksiOtetutSiirrot: MutableList<Pair<Pair<Int, Int>, Int>> = mutableListOf()
 
-    private val vapaidenRuutujenKoordinaatit: MutableList<Pair<Int, Int>> = mutableListOf()
-    private val vapaisiinRuutuihinTehtavienSiirtojenHeuristisetArvot: MutableMap<Pair<Int, Int>, Double> =
-        mutableMapOf()
+    private val mahdollistenSiirtojenHeuristisetArvot: MutableMap<Pair<Int, Int>, Double> = mutableMapOf()
 
     init {
         val pelitaulukonKokoLukuvali: IntRange = (0 until pelitaulukonKoko)
 
         pelitaulukonKokoLukuvali.forEach { ruudunYKoordinaatti ->
             pelitaulukonKokoLukuvali.forEach { ruudunXKoordinaatti ->
-                if (pelitaulukko[ruudunYKoordinaatti][ruudunXKoordinaatti] == -1) {
-                    vapaidenRuutujenKoordinaatit.add(Pair(ruudunXKoordinaatti, ruudunYKoordinaatti))
+                if (pelitaulukko[ruudunYKoordinaatti][ruudunXKoordinaatti] != -1) {
+                    throw IllegalArgumentException("Siirtogeneraattoria ei ole mahdollista luoda aloitetulle pelille")
                 }
             }
         }
@@ -47,88 +57,109 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
     ): Int? {
         val vastustajanPelaaja: Int = (1 - pelaaja)
 
-        var potentiaalinenValloitettujenRuutujenMaara = 1
-        var pelaajanVoittoonTarvittujenValloitettujenRuutujenMaara = 0
+        var pieninPelaajanVoittoonTarvittujenValloitettujenRuutujenMaara: Int? = null
 
-        var liikuVasemmalle = true
-        var liikuOikealle = true
-        var (vasemmaltaTutkittavanRuudunXKoordinaatti: Int, vasemmaltaTutkittavanRuudunYKoordinaatti: Int) =
-            liikutaHakuaVasemmalle(lahtoRuudunXKoordinaatti, lahtoRuudunYKoordinaatti)
-        var (oikealtaTutkittavanRuudunXKoordinaatti: Int, oikealtaTutkittavanRuudunYKoordinaatti: Int) =
-            liikutaHakuaOikealle(lahtoRuudunXKoordinaatti, lahtoRuudunYKoordinaatti)
-        while (true) {
-            if (
-                liikuVasemmalle &&
-                vasemmaltaTutkittavanRuudunXKoordinaatti < 0 ||
-                vasemmaltaTutkittavanRuudunYKoordinaatti < 0 ||
-                vasemmaltaTutkittavanRuudunXKoordinaatti >= pelitaulukonKoko ||
-                vasemmaltaTutkittavanRuudunYKoordinaatti >= pelitaulukonKoko
-            ) {
-                liikuVasemmalle = false
-            }
-            if (
-                liikuOikealle &&
-                oikealtaTutkittavanRuudunXKoordinaatti < 0 ||
-                oikealtaTutkittavanRuudunYKoordinaatti < 0 ||
-                oikealtaTutkittavanRuudunXKoordinaatti >= pelitaulukonKoko ||
-                oikealtaTutkittavanRuudunYKoordinaatti >= pelitaulukonKoko
-            ) {
-                liikuOikealle = false
-            }
+        var tarkastettavienRuutujenMaara = 1
+        var tarkastusalueenAlkuruudunXKoordinaatti = lahtoRuudunXKoordinaatti
+        var tarkastusalueenAlkuruudunYKoordinaatti = lahtoRuudunYKoordinaatti
+        var tarkastusalueenLoppuruudunXKoordinaatti = lahtoRuudunXKoordinaatti
+        var tarkastusalueenLoppuruudunYKoordinaatti = lahtoRuudunYKoordinaatti
+
+        while (tarkastettavienRuutujenMaara < voittoonTarvittujenValloitettujenRuutujenMaara) {
+            val (
+                suurennetunTarkastusalueenAlkuruudunXKoordinaatti: Int,
+                suurennetunTarkastusalueenAlkuruudunYKoordinaatti: Int,
+            ) = liikutaHakuaVasemmalle(tarkastusalueenAlkuruudunXKoordinaatti, tarkastusalueenAlkuruudunYKoordinaatti)
 
             if (
-                liikuVasemmalle &&
-                pelitaulukko[vasemmaltaTutkittavanRuudunYKoordinaatti][vasemmaltaTutkittavanRuudunXKoordinaatti] != vastustajanPelaaja
+                suurennetunTarkastusalueenAlkuruudunXKoordinaatti < 0 ||
+                suurennetunTarkastusalueenAlkuruudunYKoordinaatti < 0 ||
+                suurennetunTarkastusalueenAlkuruudunXKoordinaatti >= pelitaulukonKoko ||
+                suurennetunTarkastusalueenAlkuruudunYKoordinaatti >= pelitaulukonKoko ||
+                pelitaulukko[suurennetunTarkastusalueenAlkuruudunYKoordinaatti][suurennetunTarkastusalueenAlkuruudunXKoordinaatti] == vastustajanPelaaja
             ) {
-                potentiaalinenValloitettujenRuutujenMaara++
-
-                if (pelitaulukko[vasemmaltaTutkittavanRuudunYKoordinaatti][vasemmaltaTutkittavanRuudunXKoordinaatti] == -1) {
-                    pelaajanVoittoonTarvittujenValloitettujenRuutujenMaara++
-                }
-            } else if (liikuVasemmalle) {
-                liikuVasemmalle = false
-            }
-            if (
-                liikuOikealle &&
-                pelitaulukko[oikealtaTutkittavanRuudunYKoordinaatti][oikealtaTutkittavanRuudunXKoordinaatti] != vastustajanPelaaja
-            ) {
-                potentiaalinenValloitettujenRuutujenMaara++
-
-                if (pelitaulukko[oikealtaTutkittavanRuudunYKoordinaatti][oikealtaTutkittavanRuudunXKoordinaatti] == -1) {
-                    pelaajanVoittoonTarvittujenValloitettujenRuutujenMaara++
-                }
-            } else if (liikuOikealle) {
-                liikuOikealle = false
-            }
-
-            if (!liikuVasemmalle && !liikuOikealle) {
                 break
             }
-            if (liikuVasemmalle) {
-                liikutaHakuaVasemmalle(
-                    vasemmaltaTutkittavanRuudunXKoordinaatti,
-                    vasemmaltaTutkittavanRuudunYKoordinaatti,
+
+            tarkastusalueenAlkuruudunXKoordinaatti = suurennetunTarkastusalueenAlkuruudunXKoordinaatti
+            tarkastusalueenAlkuruudunYKoordinaatti = suurennetunTarkastusalueenAlkuruudunYKoordinaatti
+            tarkastettavienRuutujenMaara++
+        }
+
+        while (true) {
+            if (tarkastettavienRuutujenMaara == voittoonTarvittujenValloitettujenRuutujenMaara) {
+                var tarkastusalueellaPelaajanVoittoonTarvittujenValloitettujenRuutujenMaara = 0
+
+                var pysaytaTarkastusalueenTutkiminen = false
+                var tutkittavanRuudunXKoordinaatti: Int = tarkastusalueenAlkuruudunXKoordinaatti
+                var tutkittavanRuudunYKoordinaatti: Int = tarkastusalueenAlkuruudunYKoordinaatti
+                while (true) {
+                    if (pelitaulukko[tutkittavanRuudunYKoordinaatti][tutkittavanRuudunXKoordinaatti] == -1) {
+                        tarkastusalueellaPelaajanVoittoonTarvittujenValloitettujenRuutujenMaara++
+                    }
+
+                    if (pysaytaTarkastusalueenTutkiminen) {
+                        break
+                    }
+                    liikutaHakuaOikealle(tutkittavanRuudunXKoordinaatti, tutkittavanRuudunYKoordinaatti).let {
+                        tutkittavanRuudunXKoordinaatti = it.first
+                        tutkittavanRuudunYKoordinaatti = it.second
+                    }
+
+                    if (
+                        tutkittavanRuudunXKoordinaatti == tarkastusalueenLoppuruudunXKoordinaatti &&
+                        tutkittavanRuudunYKoordinaatti == tarkastusalueenLoppuruudunYKoordinaatti
+                    ) {
+                        pysaytaTarkastusalueenTutkiminen = true
+                    }
+                }
+
+                if (
+                    pieninPelaajanVoittoonTarvittujenValloitettujenRuutujenMaara == null ||
+                    tarkastusalueellaPelaajanVoittoonTarvittujenValloitettujenRuutujenMaara < pieninPelaajanVoittoonTarvittujenValloitettujenRuutujenMaara
+                ) {
+                    pieninPelaajanVoittoonTarvittujenValloitettujenRuutujenMaara =
+                        tarkastusalueellaPelaajanVoittoonTarvittujenValloitettujenRuutujenMaara
+                }
+
+                if (
+                    tarkastusalueenAlkuruudunXKoordinaatti == lahtoRuudunXKoordinaatti &&
+                    tarkastusalueenAlkuruudunYKoordinaatti == lahtoRuudunYKoordinaatti
+                ) {
+                    break
+                }
+                liikutaHakuaOikealle(
+                    tarkastusalueenAlkuruudunXKoordinaatti,
+                    tarkastusalueenAlkuruudunYKoordinaatti,
                 ).let {
-                    vasemmaltaTutkittavanRuudunXKoordinaatti = it.first
-                    vasemmaltaTutkittavanRuudunYKoordinaatti = it.second
+                    tarkastusalueenAlkuruudunXKoordinaatti = it.first
+                    tarkastusalueenAlkuruudunYKoordinaatti = it.second
                 }
             }
-            if (liikuOikealle) {
-                liikutaHakuaOikealle(
-                    oikealtaTutkittavanRuudunXKoordinaatti,
-                    oikealtaTutkittavanRuudunYKoordinaatti,
-                ).let {
-                    oikealtaTutkittavanRuudunXKoordinaatti = it.first
-                    oikealtaTutkittavanRuudunYKoordinaatti = it.second
-                }
+
+            val (
+                suurennetunTarkastusalueenLoppuruudunXKoordinaatti: Int,
+                suurennetunTarkastusalueenLoppuruudunYKoordinaatti: Int,
+            ) = liikutaHakuaOikealle(tarkastusalueenLoppuruudunXKoordinaatti, tarkastusalueenLoppuruudunYKoordinaatti)
+
+            if (
+                suurennetunTarkastusalueenLoppuruudunXKoordinaatti < 0 ||
+                suurennetunTarkastusalueenLoppuruudunYKoordinaatti < 0 ||
+                suurennetunTarkastusalueenLoppuruudunXKoordinaatti >= pelitaulukonKoko ||
+                suurennetunTarkastusalueenLoppuruudunYKoordinaatti >= pelitaulukonKoko ||
+                pelitaulukko[suurennetunTarkastusalueenLoppuruudunYKoordinaatti][suurennetunTarkastusalueenLoppuruudunXKoordinaatti] == vastustajanPelaaja
+            ) {
+                break
+            }
+
+            tarkastusalueenLoppuruudunXKoordinaatti = suurennetunTarkastusalueenLoppuruudunXKoordinaatti
+            tarkastusalueenLoppuruudunYKoordinaatti = suurennetunTarkastusalueenLoppuruudunYKoordinaatti
+            if (tarkastettavienRuutujenMaara < voittoonTarvittujenValloitettujenRuutujenMaara) {
+                tarkastettavienRuutujenMaara++
             }
         }
 
-        return if (potentiaalinenValloitettujenRuutujenMaara < voittoonTarvittujenValloitettujenRuutujenMaara) {
-            null
-        } else {
-            pelaajanVoittoonTarvittujenValloitettujenRuutujenMaara
-        }
+        return pieninPelaajanVoittoonTarvittujenValloitettujenRuutujenMaara
     }
 
     private fun laskeVoittoonTarvittujenValloitettujenRuutujenMaaranKeskiarvoPelaajalle(
@@ -144,12 +175,8 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
                 pelaaja,
                 lahtoRuudunXKoordinaatti,
                 lahtoRuudunYKoordinaatti,
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti - 1), ruudunYKoordinaatti)
-                },
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti + 1), ruudunYKoordinaatti)
-                },
+                ::liikutaHakuaVaakarivillaVasemmalle,
+                ::liikutaHakuaVaakarivillaOikealle,
             )
         if (vaakariviSuunnastaVoittoonTarvittujenValloitettujenRuutujenMaara != null) {
             voittoonTarvittujenValloitettujenRuutujenMaarienSumma +=
@@ -162,12 +189,8 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
                 pelaaja,
                 lahtoRuudunXKoordinaatti,
                 lahtoRuudunYKoordinaatti,
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair(ruudunXKoordinaatti, (ruudunYKoordinaatti - 1))
-                },
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair(ruudunXKoordinaatti, (ruudunYKoordinaatti + 1))
-                },
+                ::liikutaHakuaPystyrivillaVasemmalle,
+                ::liikutaHakuaPystyrivillaOikealle,
             )
         if (pystyriviSuunnastaVoittoonTarvittujenValloitettujenRuutujenMaara != null) {
             voittoonTarvittujenValloitettujenRuutujenMaarienSumma +=
@@ -180,12 +203,8 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
                 pelaaja,
                 lahtoRuudunXKoordinaatti,
                 lahtoRuudunYKoordinaatti,
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti - 1), (ruudunYKoordinaatti - 1))
-                },
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti + 1), (ruudunYKoordinaatti + 1))
-                },
+                ::liikutaHakuaVasenOikeaVinorivillaVasemmalle,
+                ::liikutaHakuaVasenOikeaVinorivillaOikealle,
             )
         if (vasenOikeaVinoriviSuunnastaVoittoonTarvittujenValloitettujenRuutujenMaara != null) {
             voittoonTarvittujenValloitettujenRuutujenMaarienSumma +=
@@ -198,12 +217,8 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
                 pelaaja,
                 lahtoRuudunXKoordinaatti,
                 lahtoRuudunYKoordinaatti,
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti - 1), (ruudunYKoordinaatti + 1))
-                },
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti + 1), (ruudunYKoordinaatti - 1))
-                },
+                ::liikutaHakuaOikeaVasenVinorivillaVasemmalle,
+                ::liikutaHakuaOikeaVasenVinorivillaOikealle,
             )
         if (oikeaVasenVinoriviSuunnastaVoittoonTarvittujenValloitettujenRuutujenMaara != null) {
             voittoonTarvittujenValloitettujenRuutujenMaarienSumma +=
@@ -247,10 +262,14 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
             }
         }
 
-        if (viimeksiOtetutSiirrot.isNotEmpty()) {
-            val vastustajanViimeisinSiirto: Pair<Int, Int> = viimeksiOtetutSiirrot
-                .last()
-                .first
+        if (viimeksiOtetutSiirrot.isNotEmpty() || viimeksiTehdytSiirrot.isNotEmpty()) {
+            val vastustajanViimeisinSiirto: Pair<Int, Int> = (
+                viimeksiOtetutSiirrot
+                    .lastOrNull()
+                    ?.first ?: viimeksiTehdytSiirrot
+                    .last()
+                    .first
+                )
             val vastustajanViimeisimmanSiirronEtaisyysVoitosta: Double? =
                 laskeVoittoonTarvittujenValloitettujenRuutujenMaaranKeskiarvoPelaajalle(
                     vastustajanPelaaja,
@@ -279,15 +298,57 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
     }
 
     private fun laskeMahdollistenSiirtojenHeuristisetArvot(pelaaja: Int, poisluettavatSiirrot: Set<Pair<Int, Int>>) {
-        vapaidenRuutujenKoordinaatit.forEach { vapaanRuudunKoordinaatit ->
-            if (!poisluettavatSiirrot.contains(vapaanRuudunKoordinaatit)) {
-                vapaisiinRuutuihinTehtavienSiirtojenHeuristisetArvot[vapaanRuudunKoordinaatit] =
-                    laskeSiirronHeuristinenArvo(
-                        pelaaja,
-                        vapaanRuudunKoordinaatit.first,
-                        vapaanRuudunKoordinaatit.second,
-                    )
+        mahdollistenSiirtojenHeuristisetArvot
+            .keys
+            .forEach { mahdollinenSiirto ->
+                if (!poisluettavatSiirrot.contains(mahdollinenSiirto)) {
+                    mahdollistenSiirtojenHeuristisetArvot[mahdollinenSiirto] =
+                        laskeSiirronHeuristinenArvo(
+                            pelaaja,
+                            mahdollinenSiirto.first,
+                            mahdollinenSiirto.second,
+                        )
+                }
             }
+    }
+
+    private fun etsiMahdollisetSiirrot() {
+        val etsintaAlueenKoko = 2
+
+        mahdollistenSiirtojenHeuristisetArvot.clear()
+        (viimeksiTehdytSiirrot + viimeksiOtetutSiirrot).forEach { (viimeksiTehtyTaiOtettuSiirto, _) ->
+            val etsintaAlueenYlaVasemmanRuudunXKoordinaatti: Int = max(
+                (viimeksiTehtyTaiOtettuSiirto.first - (etsintaAlueenKoko - 1)),
+                0,
+            )
+            val etsintaAlueenYlaVasemmanRuudunYKoordinaatti: Int = max(
+                (viimeksiTehtyTaiOtettuSiirto.second - (etsintaAlueenKoko - 1)),
+                0,
+            )
+            val etsintaAlueenAlaOikeanRuudunXKoordinaatti: Int = min(
+                (viimeksiTehtyTaiOtettuSiirto.first + (etsintaAlueenKoko - 1)),
+                (pelitaulukonKoko - 1),
+            )
+            val etsintaAlueenAlaOikeanRuudunYKoordinaatti: Int = min(
+                (viimeksiTehtyTaiOtettuSiirto.second + (etsintaAlueenKoko - 1)),
+                (pelitaulukonKoko - 1),
+            )
+
+            (etsintaAlueenYlaVasemmanRuudunYKoordinaatti..etsintaAlueenAlaOikeanRuudunYKoordinaatti)
+                .forEach { etsittavanRuudunYKoordinaatti ->
+                    (etsintaAlueenYlaVasemmanRuudunXKoordinaatti..etsintaAlueenAlaOikeanRuudunXKoordinaatti)
+                        .forEach { etsittavanRuudunXKoordinaatti ->
+                            val etsittavaRuutu: Pair<Int, Int> =
+                                Pair(etsittavanRuudunXKoordinaatti, etsittavanRuudunYKoordinaatti)
+
+                            if (
+                                !mahdollistenSiirtojenHeuristisetArvot.containsKey(etsittavaRuutu) &&
+                                pelitaulukko[etsittavaRuutu.second][etsittavaRuutu.first] == -1
+                            ) {
+                                mahdollistenSiirtojenHeuristisetArvot[etsittavaRuutu] = 0.0
+                            }
+                        }
+                }
         }
     }
 
@@ -310,19 +371,27 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
      */
     fun otaSeuraavaParasMahdollinenSiirto(edellisetSiirrot: Set<Pair<Int, Int>>): Pair<Pair<Int, Int>, Double>? {
         tarkistaEtteiPeliOleLoppunut()
-        if (vapaidenRuutujenKoordinaatit.isEmpty()) {
+        etsiMahdollisetSiirrot()
+        if (
+            (viimeksiTehdytSiirrot.isNotEmpty() || viimeksiOtetutSiirrot.isNotEmpty()) &&
+            mahdollistenSiirtojenHeuristisetArvot.isEmpty()
+        ) {
             throw IllegalStateException("Kaikki mahdolliset siirrot on jo otettu")
         }
 
-        if (edellisetSiirrot.size == vapaidenRuutujenKoordinaatit.size) {
+        if (edellisetSiirrot.size == mahdollistenSiirtojenHeuristisetArvot.size) {
             return null
         }
 
-        val pelaajanVuoro: Int = if (viimeksiOtetutSiirrot.isNotEmpty()) {
+        val pelaajanVuoro: Int = if (viimeksiTehdytSiirrot.isNotEmpty() || viimeksiOtetutSiirrot.isNotEmpty()) {
             (
-                1 - viimeksiOtetutSiirrot
-                    .last()
-                    .second
+                1 - (
+                    viimeksiOtetutSiirrot
+                        .lastOrNull()
+                        ?.second ?: viimeksiTehdytSiirrot
+                        .last()
+                        .second
+                    )
                 )
         } else {
             maksimoivaPelaaja
@@ -333,7 +402,7 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
         val (parasMahdollinenSiirto: Pair<Int, Int>, parhaanMahdollisenSiirronHeuristinenArvo: Double) =
             if (pelaajanVuoro == maksimoivaPelaaja) {
                 var parasMahdollinenSiirtoJaSenHeuristinenArvo: Map.Entry<Pair<Int, Int>, Double>? = null
-                vapaisiinRuutuihinTehtavienSiirtojenHeuristisetArvot.forEach { siirtoJaSenHeuristinenArvo ->
+                mahdollistenSiirtojenHeuristisetArvot.forEach { siirtoJaSenHeuristinenArvo ->
                     if (
                         !edellisetSiirrot.contains(siirtoJaSenHeuristinenArvo.key) &&
                         (
@@ -348,7 +417,7 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
                 (parasMahdollinenSiirtoJaSenHeuristinenArvo as Map.Entry<Pair<Int, Int>, Double>)
             } else {
                 var parasMahdollinenSiirtoJaSenHeuristinenArvo: Map.Entry<Pair<Int, Int>, Double>? = null
-                vapaisiinRuutuihinTehtavienSiirtojenHeuristisetArvot.forEach { siirtoJaSenHeuristinenArvo ->
+                mahdollistenSiirtojenHeuristisetArvot.forEach { siirtoJaSenHeuristinenArvo ->
                     if (
                         !edellisetSiirrot.contains(siirtoJaSenHeuristinenArvo.key) &&
                         (
@@ -362,11 +431,6 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
 
                 (parasMahdollinenSiirtoJaSenHeuristinenArvo as Map.Entry<Pair<Int, Int>, Double>)
             }
-        vapaidenRuutujenKoordinaatit.remove(parasMahdollinenSiirto)
-        vapaisiinRuutuihinTehtavienSiirtojenHeuristisetArvot.remove(
-            parasMahdollinenSiirto,
-            parhaanMahdollisenSiirronHeuristinenArvo,
-        )
 
         pelitaulukko[parasMahdollinenSiirto.second][parasMahdollinenSiirto.first] = pelaajanVuoro
         viimeksiOtetutSiirrot.add(Pair(parasMahdollinenSiirto, pelaajanVuoro))
@@ -385,9 +449,9 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
         tarkistaEtteiPeliOleLoppunut()
         if (
             siirronXKoordinaatti < 0 ||
-            siirronXKoordinaatti >= ristinollaPeli.pelitaulukonKoko ||
+            siirronXKoordinaatti >= pelitaulukonKoko ||
             siirronYKoordinaatti < 0 ||
-            siirronYKoordinaatti >= ristinollaPeli.pelitaulukonKoko
+            siirronYKoordinaatti >= pelitaulukonKoko
         ) {
             throw IllegalArgumentException("Siirto on mahdoton")
         }
@@ -396,15 +460,12 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
 
         if (
             viimeksiOtetutSiirrot
-                .last()
-                .first != palautettavaSiirto ||
-            viimeksiOtetutSiirrot.size < 1
+                .lastOrNull()
+                ?.first != palautettavaSiirto
         ) {
             throw IllegalArgumentException("Siirtoa ei voi palauttaa")
         }
 
-        vapaidenRuutujenKoordinaatit.add(palautettavaSiirto)
-        vapaisiinRuutuihinTehtavienSiirtojenHeuristisetArvot[palautettavaSiirto] = 0.0
         pelitaulukko[palautettavaSiirto.second][palautettavaSiirto.first] = -1
         viimeksiOtetutSiirrot.removeLast()
     }
@@ -419,12 +480,8 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
                 pelaaja,
                 siirronXKoordinaatti,
                 siirronYKoordinaatti,
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti - 1), ruudunYKoordinaatti)
-                },
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti + 1), ruudunYKoordinaatti)
-                },
+                ::liikutaHakuaVaakarivillaVasemmalle,
+                ::liikutaHakuaVaakarivillaOikealle,
             )
         if (vaakariviSuunnastaVoittoonTarvittujenValloitettujenRuutujenMaara == 0) {
             return true
@@ -435,12 +492,8 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
                 pelaaja,
                 siirronXKoordinaatti,
                 siirronYKoordinaatti,
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair(ruudunXKoordinaatti, (ruudunYKoordinaatti - 1))
-                },
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair(ruudunXKoordinaatti, (ruudunYKoordinaatti + 1))
-                },
+                ::liikutaHakuaPystyrivillaVasemmalle,
+                ::liikutaHakuaPystyrivillaOikealle,
             )
         if (pystyriviSuunnastaVoittoonTarvittujenValloitettujenRuutujenMaara == 0) {
             return true
@@ -451,12 +504,8 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
                 pelaaja,
                 siirronXKoordinaatti,
                 siirronYKoordinaatti,
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti - 1), (ruudunYKoordinaatti - 1))
-                },
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti + 1), (ruudunYKoordinaatti + 1))
-                },
+                ::liikutaHakuaVasenOikeaVinorivillaVasemmalle,
+                ::liikutaHakuaVasenOikeaVinorivillaOikealle,
             )
         if (vasenOikeaVinoriviSuunnastaVoittoonTarvittujenValloitettujenRuutujenMaara == 0) {
             return true
@@ -467,12 +516,8 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
                 pelaaja,
                 siirronXKoordinaatti,
                 siirronYKoordinaatti,
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti - 1), (ruudunYKoordinaatti + 1))
-                },
-                { ruudunXKoordinaatti, ruudunYKoordinaatti ->
-                    Pair((ruudunXKoordinaatti + 1), (ruudunYKoordinaatti - 1))
-                },
+                ::liikutaHakuaOikeaVasenVinorivillaVasemmalle,
+                ::liikutaHakuaOikeaVasenVinorivillaOikealle,
             )
         if (oikeaVasenVinoriviSuunnastaVoittoonTarvittujenValloitettujenRuutujenMaara == 0) {
             return true
@@ -488,12 +533,9 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
      */
     fun getPelinPaattymistilanneJaVoittoarvo(): Pair<Boolean, Double> {
         tarkistaEtteiPeliOleLoppunut()
-        if (viimeksiOtetutSiirrot.size < 1) {
-            throw IllegalStateException("Otettuja siirtoja ei ole")
-        }
 
         val (viimeksiOtettuSiirto: Pair<Int, Int>, viimeksiOtetunSiirronOttanutPelaaja: Int) =
-            viimeksiOtetutSiirrot.last()
+            viimeksiOtetutSiirrot.lastOrNull() ?: throw IllegalStateException("Otettuja siirtoja ei ole")
         if (
             tarkistaVoittikoSiirronOttanutPelaaja(
                 viimeksiOtetunSiirronOttanutPelaaja,
@@ -508,7 +550,7 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
             }
             return Pair(true, voittoarvo)
         }
-        if (vapaidenRuutujenKoordinaatit.isEmpty()) {
+        if (mahdollistenSiirtojenHeuristisetArvot.isEmpty()) {
             return Pair(true, 0.0)
         }
 
@@ -528,13 +570,13 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
         tarkistaEtteiPeliOleLoppunut()
         if (
             siirronXKoordinaatti < 0 ||
-            siirronXKoordinaatti >= ristinollaPeli.pelitaulukonKoko ||
+            siirronXKoordinaatti >= pelitaulukonKoko ||
             siirronYKoordinaatti < 0 ||
-            siirronYKoordinaatti >= ristinollaPeli.pelitaulukonKoko
+            siirronYKoordinaatti >= pelitaulukonKoko
         ) {
             throw IllegalArgumentException("Siirto on mahdoton")
         }
-        if (viimeksiOtetutSiirrot.size > 1) {
+        if (viimeksiOtetutSiirrot.isNotEmpty()) {
             throw IllegalStateException("Kaikkia otettuja siirtoja ei ole palautettu")
         }
         if (pelitaulukko[siirronYKoordinaatti][siirronXKoordinaatti] != -1) {
@@ -548,17 +590,7 @@ class Siirtogeneraattori(private val ristinollaPeli: RistinollaPeli, private val
         }
         val merkittavaSiirto: Pair<Int, Int> = Pair(siirronXKoordinaatti, siirronYKoordinaatti)
 
-        vapaidenRuutujenKoordinaatit.remove(merkittavaSiirto)
-        vapaisiinRuutuihinTehtavienSiirtojenHeuristisetArvot.remove(merkittavaSiirto)
         pelitaulukko[merkittavaSiirto.second][merkittavaSiirto.first] = pelaaja
-
-        if (!maksimoivanPelaajanSiirto) {
-            val minimoivanPelaajanOttamaSiirto: Pair<Pair<Int, Int>, Int> = Pair(merkittavaSiirto, pelaaja)
-            if (viimeksiOtetutSiirrot.isEmpty()) {
-                viimeksiOtetutSiirrot.add(minimoivanPelaajanOttamaSiirto)
-            } else {
-                viimeksiOtetutSiirrot[0] = minimoivanPelaajanOttamaSiirto
-            }
-        }
+        viimeksiTehdytSiirrot.add(Pair(merkittavaSiirto, pelaaja))
     }
 }
